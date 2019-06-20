@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/simple_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimaryDark"
+        app:title="调度"
+        app:navigationIcon="@mipmap/menu">
+    </androidx.appcompat.widget.Toolbar>
+
+    <androidx.drawerlayout.widget.DrawerLayout
+        android:id="@+id/drawer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_marginTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_background"
+                android:text="Hello World!"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:orientation="vertical"
+                android:paddingBottom="30dp"
+                android:paddingTop="20dp"
+                android:paddingLeft="25dp"
+                android:paddingStart="25dp"
+                android:gravity="start">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="5dp"
+                    android:gravity="top|start">
+                    <TextView
+                        android:textSize="18dp"
+                        android:text="模式： "
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="未安装"
+                        android:textSize="18dp" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_marginBottom="5dp"
+                    android:orientation="horizontal"
+                    android:layout_gravity="start|top"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView
+                        android:textSize="18dp"
+                        android:text="版本： "
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <TextView
+                        android:id="@+id/version"
+                        android:textSize="18dp"
+                        android:text="未安装"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_gravity="start|top"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView
+                        android:textSize="18dp"
+                        android:text="busybox版本： "
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <TextView
+                        android:id="@+id/busybox_version"
+                        android:textSize="18dp"
+                        android:text="未安装"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="70dp"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal"
+                android:gravity="center">
+                <Button
+                    android:elevation="2dp"
+                    android:id="@+id/battery"
+                    android:textSize="18dp"
+                    android:textColor="#fff"
+                    android:text="省电模式"
+                    android:layout_marginLeft="20dp"
+                    android:background="@drawable/battery_selector"
+                    android:layout_width="150dp"
+                    android:layout_height="50dp" />
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:visibility="invisible"
+                    android:id="@+id/ensure1"
+                    android:layout_marginLeft="5dp"
+                    android:layout_gravity="center"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@mipmap/ensure"/>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="70dp"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center">
+                <Button
+                    android:elevation="2dp"
+                    android:id="@+id/balance"
+                    android:textSize="18dp"
+                    android:text="均衡模式"
+                    android:textColor="#fff"
+                    android:layout_marginLeft="20dp"
+                    android:background="@drawable/balance_selector"
+                    android:layout_width="150dp"
+                    android:layout_height="50dp" />
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:visibility="invisible"
+                    android:id="@+id/ensure2"
+                    android:layout_marginLeft="5dp"
+                    android:layout_gravity="center"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@mipmap/ensure"/>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="70dp"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center">
+                <Button
+                    android:elevation="2dp"
+                    android:id="@+id/performance"
+                    android:textSize="18dp"
+                    android:textColor="#fff"
+                    android:text="游戏模式"
+                    android:layout_marginLeft="20dp"
+                    android:background="@drawable/perform_selector"
+                    android:layout_width="150dp"
+                    android:layout_height="50dp" />
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/ensure3"
+                    android:visibility="invisible"
+                    android:layout_marginLeft="5dp"
+                    android:layout_gravity="center"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@mipmap/ensure"/>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="70dp"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center">
+                <Button
+                    android:elevation="2dp"
+                    android:id="@+id/turbo"
+                    android:textSize="18dp"
+                    android:typeface="normal"
+                    android:text="极限模式"
+                    android:textColor="#fff"
+                    android:layout_marginLeft="20dp"
+                    android:background="@drawable/turbo_selector"
+                    android:layout_width="150dp"
+                    android:layout_height="50dp" />
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:visibility="invisible"
+                    android:id="@+id/ensure4"
+                    android:layout_marginLeft="5dp"
+                    android:layout_gravity="center"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@mipmap/ensure"/>
+            </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <com.google.android.material.navigation.NavigationView
+            android:id="@+id/navigationView"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="left"
+            android:fitsSystemWindows="true"
+            app:menu="@menu/menu_main">
+
+        </com.google.android.material.navigation.NavigationView>
+
+    </androidx.drawerlayout.widget.DrawerLayout>
+
+</LinearLayout>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!--扫描-->
+    <item android:id="@+id/setting"
+        android:title="设置"
+        android:icon="@mipmap/setting"
+        app:showAsAction="ifRoom"/>
+    <item android:id="@+id/lab"
+        android:title="实验室"
+        android:icon="@mipmap/lab"
+        app:showAsAction="ifRoom"/>
+    <!--添加-->
+
+    <!--设置-->
+</menu>
