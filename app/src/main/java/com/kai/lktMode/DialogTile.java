@@ -102,6 +102,7 @@ public class DialogTile extends TileService{
     }
 
     private void cutMode(String line){
+        int mode=(int)Preference.get(getApplicationContext(),"default","int");
         String pattern = "PROFILE\\s:\\s(\\S+)";
         Pattern r = Pattern.compile(pattern);
 
@@ -114,7 +115,9 @@ public class DialogTile extends TileService{
                 case "Balanced":showIcon(tileLabels[1],lalelIds[1]);break;
                 case "Performance":showIcon(tileLabels[2],lalelIds[2]);break;
                 case "Turbo":showIcon(tileLabels[3],lalelIds[3]);break;
-                default:showIcon(tileLabels[4],lalelIds[4]);break;
+                default:showIcon(tileLabels[mode],lalelIds[mode]);Toast.makeText(getApplicationContext(),"配置错误，切换到默认模式",Toast.LENGTH_SHORT).show();
+                switchMode(mode);
+                break;
             }
         } else {
             //Toast.makeText(MainActivity.this,)

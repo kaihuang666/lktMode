@@ -9,8 +9,12 @@ import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.Manifest;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -29,10 +33,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-import com.arialyy.annotations.Download;
-import com.arialyy.aria.core.Aria;
-import com.arialyy.aria.core.download.DownloadTask;
+
 import com.google.android.material.navigation.NavigationView;
+import com.liulishuo.filedownloader.BaseDownloadTask;
+import com.liulishuo.filedownloader.FileDownloadListener;
+import com.liulishuo.filedownloader.FileDownloader;
 import com.stericson.RootShell.exceptions.RootDeniedException;
 import com.stericson.RootShell.execution.Command;
 import com.stericson.RootShell.execution.Shell;
@@ -55,7 +60,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Toolbar mNormalToolbar;
     ActionBarDrawerToggle mActionBarDrawerToggle;
     private AlertDialog dialog;
-    private AlertDialog downloadDialog;
+    private ProgressDialog downloadDialog;
+    private String[] modeTitle={"省电模式","均衡模式","游戏模式","极限模式"};
     private int[] buttonID={R.id.battery,R.id.balance,R.id.performance,R.id.turbo};
     private int[] ensureID={R.id.ensure1,R.id.ensure2,R.id.ensure3,R.id.ensure4};
     private Shell shell;
@@ -67,43 +73,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Aria.download(this).register();
+        FileDownloader.setup(this);
         mNormalToolbar=findViewById(R.id.simple_toolbar);
         initToolbar();
         initDialog();
         initButton();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
         getRoot();
-        //setting();
-
-
     }
 
 
-    private void setting(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (Settings.canDrawOverlays(MainActivity.this)) {
-                ;
-            } else {
-                //若没有权限，提示获取.
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent,10);
-                Toast.makeText(MainActivity.this,"需要取得权限以使用悬浮窗",Toast.LENGTH_SHORT).show();
-                startActivity(intent);
-            }
-
-        }else {
 
 
-        }
-
-    }
-    public void readProp(){
+    public void readProp(final boolean isCreate){
         Preference.clearAll(MainActivity.this);
         try {
             cmd("mkdir "+Environment.getExternalStorageDirectory().getAbsolutePath()+"/lktMode/");
@@ -137,8 +118,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             dialog.dismiss();
                         }
                     }else {
-                        dialog.dismiss();
-                        installLKT();
+                        if (!isCreate)
+                            return;
+                        try{
+                            RootTools.getShell(false).add(new Command(0,"lkt"){
+                                @Override
+                                public void commandCompleted(int id, int exitcode) {
+                                    super.commandCompleted(id, exitcode);
+                                    if (exitcode==0) {
+                                        dialog.dismiss();
+                                        setVersion("已安装");
+                                        setMode("unsure");
+                                        setBusyBox("未完成开机配置");
+                                        Toast.makeText(MainActivity.this,"还未完成开机配置，5秒后执行默认模式",Toast.LENGTH_LONG).show();
+                                        TimerTask task=new TimerTask() {
+                                            @Override
+                                            public void run() {
+                                                runOnUiThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        reset();
+                                                    }
+                                                });
+                                            }
+                                        };
+                                        Timer timer=new Timer();
+                                        timer.schedule(task,5000);
+                                    }else {
+                                        dialog.dismiss();
+                                        installLKT();
+                                    }
+                                }
+
+                            });
+                        }catch (Exception e){
+
+                        }
+
+                        //installLKT();
                     }
 
 
@@ -171,6 +188,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         version.setText(str);
 
     }
+
+
     private void cutMode(String line){
         String pattern = "PROFILE\\s:\\s(\\S+)";
         Pattern r = Pattern.compile(pattern);
@@ -178,7 +197,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // 现在创建 matcher 对象
         Matcher m = r.matcher(line);
         if (m.find( )) {
-            isLktInstalled=true;
+            //Toast.makeText(this,m.group(1),Toast.LENGTH_SHORT).show();
             setMode(m.group(1));
         } else {
             //Toast.makeText(MainActivity.this,)
@@ -192,9 +211,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case "Balanced":mode.setText("均衡模式");setButton("均衡模式切换中",R.id.balance,R.id.ensure2);break;
             case "Performance":mode.setText("游戏模式");setButton("游戏模式切换中",R.id.performance,R.id.ensure3);break;
             case "Turbo":mode.setText("极限模式");setButton("极限模式切换中",R.id.turbo,R.id.ensure4);break;
-            case "unsure":mode.setText("获取中");break;
-            default:mode.setText("错误配置");break;
+            case "unsure":mode.setText("未完成开机配置");break;
+            default:mode.setText("错误配置");reset();break;
         }
+    }
+    private void reset(){
+        TextView mode=(TextView)findViewById(R.id.mode);
+        int index=(int)Preference.get(this,"default","int")+1;
+        mode.setText(modeTitle[index-1]);
+        Toast.makeText(MainActivity.this,"已切换到默认模式",Toast.LENGTH_LONG).show();
+        setButton("配置错误，切换到默认模式",buttonID[index-1],ensureID[index-1]);
+        try{
+            shell.add(new Command(0,"su -c lkt "+index){
+                @Override
+                public void commandCompleted(int id, int exitcode) {
+                    super.commandCompleted(id, exitcode);
+
+                }
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
     private void cutBusyBox(String str){
         String pattern = "BUSYBOX\\s:\\s(\\S+)";
@@ -225,6 +263,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             e.printStackTrace();
         }
     }
+    /*
     @Download.onTaskRunning protected void running(DownloadTask task) {
         int p = task.getPercent();	//任务进度百分比
         downloadDialog.setMessage("下载进度："+p+"%");
@@ -236,69 +275,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         downloadDialog.dismiss();
         switch (task.getTaskName()){
             case "lkt_magisk.zip":
-                AlertDialog dialog1=new AlertDialog.Builder(MainActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
-                        .setTitle("lkt模块已经下载到内部储存/lktMode/lkt_magisk.zip")
-                        .setItems(new String[]{"使用magisk安装", "重启到rec安装", "稍后再说"}, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                switch (i){
-                                    case 0:
-                                        PackageManager packageManager = getPackageManager();
-                                        Intent intent= packageManager.getLaunchIntentForPackage("com.topjohnwu.magisk");
-                                        startActivity(intent);
-                                        showToast("请在<模块>中选择内部储存/lktMode/lkt_magisk.zip安装");
-                                        break;
-                                    case 1:
-                                        try{
-                                            Runtime.getRuntime().exec(
-                                                    new String[]{"su","-c","reboot recovery"});
-                                        }catch (Exception e){
-                                            e.printStackTrace();
-                                        }
-                                        break;
-                                    case 2:
-                                        break;
-                                    default:break;
-                                }
-                            }
-                        })
 
-                        .create();
-                dialog1.show();
                 break;
                 case "busybox_magisk.zip":
-                AlertDialog dialog2=new AlertDialog.Builder(MainActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
-                        .setTitle("busybox模块已经下载到内部储存/lktMode/lkt_magisk.zip")
-                        .setItems(new String[]{"使用magisk安装", "重启到rec安装", "稍后再说"}, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                switch (i){
-                                    case 0:
-                                        PackageManager packageManager = getPackageManager();
-                                        Intent intent= packageManager.getLaunchIntentForPackage("com.topjohnwu.magisk");
-                                        startActivity(intent);
-                                        showToast("请在<模块>中选择内部储存/lktMode/lkt_magisk.zip安装");
-                                        break;
-                                    case 1:
-                                        try{
-                                            Runtime.getRuntime().exec(
-                                                    new String[]{"su","-c","reboot recovery"});
-                                        }catch (Exception e){
-                                            e.printStackTrace();
-                                        }
-                                        break;
-                                    case 2:
-                                        break;
-                                    default:break;
-                                }
-                            }
-                        })
 
-                        .create();
-                dialog2.show();
                 break;
         }
-    }
+    }*/
     private  void disableButton(){
         for (int i:buttonID){
             ((Button)findViewById(i)).setEnabled(false);
@@ -309,36 +292,126 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             ((Button)findViewById(i)).setEnabled(true);
         }
     }
-    private void installBusybox(){
-        disableButton();
-        AlertDialog dialog=new AlertDialog.Builder(MainActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
-                .setTitle("检测到您的设备暂未安装BusyBox，这可能使模块运行不稳定")
-                .setItems(new String[]{"直接安装","安装magisk模块"}, new DialogInterface.OnClickListener() {
+    public static void installStyleB(final Context context){
+        AlertDialog dialog2=new AlertDialog.Builder(context,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                .setTitle("busybox模块已经下载到内部储存/lktMode/lkt_magisk.zip")
+                .setItems(new String[]{"使用magisk安装", "重启到rec安装", "稍后再说"}, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         switch (i){
-                            case 0:try{
-                                Uri uri = Uri.parse("market://details?id="+"stericson.busybox ");
-                                Intent intent = new Intent(Intent.ACTION_VIEW,uri);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
-                                Toast.makeText(MainActivity.this,"安装BusyBox应用，并打开安装脚本，完成后请重启手动挡",Toast.LENGTH_LONG).show();
-                            }catch(ActivityNotFoundException e){
-                                Toast.makeText(MainActivity.this, "找不到应用市场", Toast.LENGTH_SHORT).show();
-                            }
+                            case 0:
+                                PackageManager packageManager = context.getPackageManager();
+                                Intent intent= packageManager.getLaunchIntentForPackage("com.topjohnwu.magisk");
+                                context.startActivity(intent);
+                                Toast.makeText(context,"请在<模块>中选择内部储存/lktMode/lkt_magisk.zip安装",Toast.LENGTH_LONG);
                                 break;
-                            case 1:downloadDialog.show();
-                                cmd("rm /storage/emulated/0/busybox.zip");
-                                Aria.download(this)
-                                        .load("https://files.catbox.moe/5t8g9z.zip")     //读取下载地址
-                                        .setFilePath(Environment.getExternalStorageDirectory().getAbsolutePath()+"/lktMode/busybox_magisk.zip") //设置文件保存的完整路径
-                                        .start();   //启动下载
+                            case 1:
+                                try{
+                                    Runtime.getRuntime().exec(
+                                            new String[]{"su","-c","reboot recovery"});
+                                }catch (Exception e){
+                                    e.printStackTrace();
+                                }
                                 break;
+                            case 2:
+                                break;
+                            default:break;
                         }
                     }
                 })
 
-                .setCancelable(false)
+                .create();
+        dialog2.show();
+    }
+    public static void installStyleL(final Context context){
+        AlertDialog dialog1=new AlertDialog.Builder(context,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                .setTitle("lkt模块已经下载到内部储存/lktMode/lkt_magisk.zip")
+                .setItems(new String[]{"使用magisk安装", "重启到rec安装", "稍后再说"}, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        switch (i){
+                            case 0:
+                                PackageManager packageManager =context.getPackageManager();
+                                Intent intent= packageManager.getLaunchIntentForPackage("com.topjohnwu.magisk");
+                                context.startActivity(intent);
+                                Toast.makeText(context,"请在<模块>中选择内部储存/lktMode/lkt_magisk.zip安装",Toast.LENGTH_LONG);
+                                break;
+                            case 1:
+                                try{
+                                    Runtime.getRuntime().exec(
+                                            new String[]{"su","-c","reboot recovery"});
+                                }catch (Exception e){
+                                    e.printStackTrace();
+                                }
+                                break;
+                            case 2:
+                                break;
+                            default:break;
+                        }
+                    }
+                })
+
+                .create();
+        dialog1.show();
+    }
+    private void installBusybox(){
+        disableButton();
+        final AlertDialog dialog=new AlertDialog.Builder(MainActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                .setTitle("检测到您的设备暂未安装BusyBox，这可能使模块运行不稳定")
+                .setCancelable(true)
+                .setItems(new String[]{"直接安装", "安装magisk模块"}, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        switch (i){
+                            case 0: try{
+                                    Uri uri = Uri.parse("market://details?id="+"stericson.busybox ");
+                                    Intent intent = new Intent(Intent.ACTION_VIEW,uri);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                    Toast.makeText(MainActivity.this,"安装BusyBox应用，并打开安装脚本，完成后请重启手动挡",Toast.LENGTH_LONG).show();
+                                }catch(ActivityNotFoundException e){
+                                    Toast.makeText(MainActivity.this, "找不到应用市场", Toast.LENGTH_SHORT).show();
+                                }
+                                break;
+                            case 1:downloadDialog.show();
+                                FileDownloader.getImpl().create("https://files.catbox.moe/5t8g9z.zip")
+                                        .setPath(Environment.getExternalStorageDirectory().getAbsolutePath()+"/lktMode/busybox_magisk.zip")
+                                        .setForceReDownload(true)
+                                        .setListener(new FileDownloadListener() {
+                                            @Override
+                                            protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                                            }
+                                            @Override
+                                            protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                                                int p=soFarBytes*100/totalBytes;
+                                                downloadDialog.setMessage("下载进度："+p+"%");
+                                                downloadDialog.show();
+                                            }
+                                            @Override
+                                            protected void completed(BaseDownloadTask task) {
+                                                downloadDialog.dismiss();
+                                                installStyleB(MainActivity.this);
+                                            }
+
+                                            @Override
+                                            protected void paused(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                                            }
+
+                                            @Override
+                                            protected void error(BaseDownloadTask task, Throwable e) {
+                                                downloadDialog.dismiss();
+                                                showToast("下载失败");
+                                            }
+
+                                            @Override
+                                            protected void warn(BaseDownloadTask task) {
+                                            }
+                                        }).start();
+                                break;
+                        }
+                    }
+                })
                 .create();
         dialog.show();
     }
@@ -351,12 +424,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.cancel();
                         downloadDialog.show();
-                        cmd("rm /storage/emulated/0/busybox.zip");
+                        FileDownloader.getImpl().create("https://files.catbox.moe/9ik95m.zip")
+                                .setPath(Environment.getExternalStorageDirectory().getAbsolutePath()+"/lktMode/",true)
+                                .setForceReDownload(true)
+                                .setCallbackProgressTimes(300)
+                                .setMinIntervalUpdateSpeed(400)
+                                .setListener(new FileDownloadListener() {
+                                    @Override
+                                    protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                                    }
+                                    @Override
+                                    protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                                        int p=soFarBytes*100/totalBytes;
+                                        downloadDialog.setMessage("下载进度："+p+"%");
+                                        downloadDialog.show();
+                                    }
+                                    @Override
+                                    protected void completed(BaseDownloadTask task) {
+                                        downloadDialog.dismiss();
+                                        installStyleL(MainActivity.this);
+                                    }
+
+                                    @Override
+                                    protected void paused(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                                    }
+
+                                    @Override
+                                    protected void error(BaseDownloadTask task, Throwable e) {
+                                        downloadDialog.dismiss();
+                                        e.printStackTrace();
+                                        Toast.makeText(MainActivity.this,e.toString(),7000).show();
+                                    }
+
+                                    @Override
+                                    protected void warn(BaseDownloadTask task) {
+                                    }
+                                }).start();
+                        /*
                         Aria.download(this)
                                 .load("https://files.catbox.moe/9ik95m.zip")     //读取下载地址
                                 .setFilePath(Environment.getExternalStorageDirectory().getAbsolutePath()+"/lktMode/lkt_magisk.zip") //设置文件保存的完整路径
-                                .start();   //启动下载
+                                .start();   //启动下载*/
 
 
                     }
@@ -473,11 +583,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setCancelable(false)
                 .setMessage("模式切换中")
                 .build();
-        downloadDialog= new SpotsDialog.Builder()
-                .setContext(this)
-                .setCancelable(false)
-                .setMessage("下载中")
-                .build();
+        downloadDialog= new ProgressDialog(this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert);
+        downloadDialog.setCancelable(false);
+        downloadDialog.setTitle("正在下载");
     }
     private void initToolbar() {
         //设置menu
@@ -511,8 +619,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 switch (ID){
                     case R.id.setting:
                         Intent intent=new Intent(MainActivity.this,SettingActivity.class);
-                        intent.putExtra("isLktInstalled",isLktInstalled);
-                        intent.putExtra("isBusyboxInstalled",isBusyboxInstalled);
+                        intent.putExtra("passage",passage);
                         startActivity(intent);
                         //overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
                     break;
@@ -531,20 +638,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, permissions, 1);
         }else {
-            readProp();
+            readProp(true);
         }
     }
 
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        try{
-            shell.close();
-        }catch (IOException e){
-            e.printStackTrace();
-        }
-    }
+
 
     @Override
     protected void onStop() {
@@ -553,18 +652,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        try{
+    protected void onRestart() {
+        super.onRestart();
+        try {
             shell=RootTools.getShell(true);
-        }catch (TimeoutException|RootDeniedException|IOException e){
+        }catch (Exception e){
             e.printStackTrace();
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            readProp();
+            readProp(false);
         }
-
     }
+
+
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -577,7 +677,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (requestCode) {
             case 1:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){ //同意权限申请
-                    readProp();
+                    readProp(true);
 
                 }else { //拒绝权限申请
                     Toast.makeText(this,"权限被拒绝了",Toast.LENGTH_SHORT).show();

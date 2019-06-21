@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
+    private OnItemClick onItemClick=null;
     private List<Item> items;
     static class ViewHolder extends RecyclerView.ViewHolder{
         TextView title;
@@ -32,16 +33,28 @@ public class ListAdapter extends RecyclerView.Adapter<ListAdapter.ViewHolder> {
         ViewHolder holder=new ViewHolder(view);
         return holder;
     }
-
+    public void setOnItemClick(OnItemClick click){
+        onItemClick=click;
+    }
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, final int position) {
         Item item=items.get(position);
         holder.title.setText(item.getTitle());
         holder.subtitle.setText(item.getSubtitle());
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onItemClick.onClick(position);
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
         return items.size();
     }
+    interface OnItemClick{
+        public void onClick(int i);
+    }
 }
+

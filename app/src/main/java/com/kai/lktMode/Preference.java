@@ -11,7 +11,7 @@ public class Preference {
         }else if(value instanceof String){
             editor.putString(key,(String)value);
         }else if(value instanceof Integer){
-            editor.putInt(key,(int)value);
+            editor.putInt(key,((Integer) value).intValue());
         }
         editor.apply();
     }
@@ -27,7 +27,10 @@ public class Preference {
     }
     public static void clearAll(Context context){
         SharedPreferences.Editor editor=context.getSharedPreferences("db",Context.MODE_PRIVATE).edit();
+        int mode=(int)get(context,"default","int");
         editor.clear();
         editor.apply();
+        save(context,"default",mode);
+
     }
 }
