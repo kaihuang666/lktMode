@@ -11,12 +11,14 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import android.Manifest;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -79,7 +81,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initDialog();
         initButton();
         getRoot();
+        if ((Boolean)Preference.get(MainActivity.this,"autoLock","Boolean")){
+            Intent intent=new Intent(this,AutoService.class);
+            startService(intent);
+        }
+        if (hasPermission()){
+            //getTopApp(context);
+        }else {
+            Intent i = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+            startActivity(i);
+        }
     }
+    private boolean hasPermission() {
+        AppOpsManager appOps = (AppOpsManager)
+                getSystemService(Context.APP_OPS_SERVICE);
+        int mode = 0;
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT) {
+            mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), getPackageName());
+        }
+        return mode == AppOpsManager.MODE_ALLOWED;
+    }
+
 
 
 
@@ -293,7 +316,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
     public static void installStyleB(final Context context){
-        AlertDialog dialog2=new AlertDialog.Builder(context,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+        AlertDialog dialog2=new AlertDialog.Builder(context,R.style.AppDialog)
                 .setTitle("busybox模块已经下载到内部储存/lktMode/lkt_magisk.zip")
                 .setItems(new String[]{"使用magisk安装", "重启到rec安装", "稍后再说"}, new DialogInterface.OnClickListener() {
                     @Override
@@ -324,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dialog2.show();
     }
     public static void installStyleL(final Context context){
-        AlertDialog dialog1=new AlertDialog.Builder(context,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+        AlertDialog dialog1=new AlertDialog.Builder(context,R.style.AppDialog)
                 .setTitle("lkt模块已经下载到内部储存/lktMode/lkt_magisk.zip")
                 .setItems(new String[]{"使用magisk安装", "重启到rec安装", "稍后再说"}, new DialogInterface.OnClickListener() {
                     @Override
@@ -356,7 +379,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     private void installBusybox(){
         disableButton();
-        final AlertDialog dialog=new AlertDialog.Builder(MainActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+        final AlertDialog dialog=new AlertDialog.Builder(MainActivity.this,R.style.AppDialog)
                 .setTitle("检测到您的设备暂未安装BusyBox，这可能使模块运行不稳定")
                 .setCancelable(true)
                 .setItems(new String[]{"直接安装", "安装magisk模块"}, new DialogInterface.OnClickListener() {
@@ -417,7 +440,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     private void installLKT(){
         disableButton();
-        final AlertDialog dialog1=new AlertDialog.Builder(MainActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+        final AlertDialog dialog1=new AlertDialog.Builder(MainActivity.this,R.style.AppDialog)
                 .setTitle("检测到您的设备暂未安装LKT模块")
                 .setMessage("是否下载LKT magisk模块到您的设备？")
                 .setCancelable(false)
@@ -583,7 +606,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setCancelable(false)
                 .setMessage("模式切换中")
                 .build();
-        downloadDialog= new ProgressDialog(this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert);
+        downloadDialog= new ProgressDialog(this,R.style.AppDialog);
         downloadDialog.setCancelable(false);
         downloadDialog.setTitle("正在下载");
     }
@@ -623,7 +646,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         startActivity(intent);
                         //overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
                     break;
-                    case R.id.lab:break;
+                    case R.id.lab:
+                        Intent intent1=new Intent(MainActivity.this,LabActivity.class);
+                        startActivity(intent1);
+                        break;
                 }
                 return true;
             }

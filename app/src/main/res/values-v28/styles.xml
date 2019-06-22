@@ -9,9 +9,11 @@
         <item name="colorAccent">@color/colorPrimaryDark</item>
     </style>
     <style name="AppDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:titleTextColor">@color/colorPrimaryDark</item>
         <item name="colorPrimaryDark">#1868A7</item>
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="dialogCornerRadius">12dp</item>
+        <item name="android:buttonCornerRadius">10dp</item>
         <item name="colorAccent">@color/colorPrimaryDark</item>
     </style>
 

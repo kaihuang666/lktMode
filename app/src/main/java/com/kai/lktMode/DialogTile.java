@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
@@ -27,9 +28,11 @@ import java.util.regex.Pattern;
 
 @TargetApi(24)
 public class DialogTile extends TileService{
+    private int now=0;
     private String[] items=new String[]{"省电模式", "均衡模式", "游戏模式","极限模式"};
     private String[] tileLabels=new String[]{"省电模式", "均衡模式", "游戏模式","极限模式","错误配置"};
     private int[] lalelIds={R.mipmap.battery_tile,R.mipmap.balance_tile,R.mipmap.performance_tile,R.mipmap.turbo_tile,R.mipmap.icon_tile};
+    private ScreenReceiver receiver;
     @Override
     public void onStartListening() {
         super.onStartListening();
@@ -41,18 +44,30 @@ public class DialogTile extends TileService{
 
     }
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        if ((Boolean)Preference.get(getApplicationContext(),"autoLock","Boolean")){
+            Intent intent1=new Intent(getApplicationContext(),AutoService.class);
+            getApplicationContext().startService(intent1);
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        //unregisterScreenActionReceiver();
+    }
+
 
 
     @Override
     public void onClick() {
         super.onClick();
         collapseStatusBar(getBaseContext());
-        showDialog();
+        showDialog(now);
 
     }
-
-
-
     private void readMode(){
         try{
             Shell shell=RootTools.getShell(true);
@@ -111,10 +126,10 @@ public class DialogTile extends TileService{
         if (m.find( )) {
             //Toast.makeText(getApplicationContext(),m.group(1),Toast.LENGTH_SHORT).show();
             switch (m.group(1)){
-                case "Battery":showIcon(tileLabels[0],lalelIds[0]);break;
-                case "Balanced":showIcon(tileLabels[1],lalelIds[1]);break;
-                case "Performance":showIcon(tileLabels[2],lalelIds[2]);break;
-                case "Turbo":showIcon(tileLabels[3],lalelIds[3]);break;
+                case "Battery":showIcon(tileLabels[0],lalelIds[0]);now=0;break;
+                case "Balanced":showIcon(tileLabels[1],lalelIds[1]);now=1;break;
+                case "Performance":showIcon(tileLabels[2],lalelIds[2]);now=2;break;
+                case "Turbo":showIcon(tileLabels[3],lalelIds[3]);now=3;break;
                 default:showIcon(tileLabels[mode],lalelIds[mode]);Toast.makeText(getApplicationContext(),"配置错误，切换到默认模式",Toast.LENGTH_SHORT).show();
                 switchMode(mode);
                 break;
@@ -125,14 +140,20 @@ public class DialogTile extends TileService{
 
     }
 
-    public void showDialog(){
-        AlertDialog dialog=new AlertDialog.Builder(getApplicationContext(),android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+    public void showDialog(final int mode){ ;
+        AlertDialog dialog=new AlertDialog.Builder(getApplicationContext(),R.style.AppDialog)
                 .setTitle("选择调度模式")
-                .setItems(items, new DialogInterface.OnClickListener() {
+                .setSingleChoiceItems(items,now, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        showIcon(tileLabels[i],lalelIds[i]);
-                        switchMode(i);
+                        if (i==mode){
+
+                        }else {
+                            dialogInterface.cancel();
+                            showIcon(tileLabels[i],lalelIds[i]);
+                            switchMode(i);
+                        }
+
                     }
                 })
                 .create();

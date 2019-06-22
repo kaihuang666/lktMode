@@ -33,7 +33,9 @@ public class CommandService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        final boolean isShow=intent.getBooleanExtra("isShow",true);
         int mode=intent.getIntExtra("mode",1);
+        if (isShow)
         showToastByMsg(CommandService.this,modes[mode-1]+"切换中",1000);
         try{
             Runtime.getRuntime().exec("su -c lkt "+mode);
@@ -43,6 +45,7 @@ public class CommandService extends IntentService {
         TimerTask task= new TimerTask() {
             @Override
             public void run() {
+                if (isShow)
                 showToastByMsg(CommandService.this,"切换完成",1000);
                 msgHandler.removeCallbacksAndMessages(Looper.getMainLooper());
             }

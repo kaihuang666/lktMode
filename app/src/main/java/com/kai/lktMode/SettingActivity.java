@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -17,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
+import android.view.View;
 import android.widget.Toast;
 
 import com.liulishuo.filedownloader.BaseDownloadTask;
@@ -39,8 +41,9 @@ public class SettingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setting);
+        initToolBar();
         final Intent intent=getIntent();
-        downloadDialog= new ProgressDialog(this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert);
+        downloadDialog= new ProgressDialog(this,R.style.AppDialog);
         downloadDialog.setCancelable(false);
         downloadDialog.setTitle("正在下载");
         Item item=new Item("LKT模块","点击安装");
@@ -62,7 +65,7 @@ public class SettingActivity extends AppCompatActivity {
                 switch (i){
                     case 0:
                         if ((Boolean) Preference.get(SettingActivity.this,"version","Boolean")){
-                            AlertDialog dialog=new AlertDialog.Builder(SettingActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                            AlertDialog dialog=new AlertDialog.Builder(SettingActivity.this,R.style.AppDialog)
                                     .setMessage(intent.getStringExtra("passage"))
                                     .setTitle("配置文件")
                                     .setNegativeButton("返回", new DialogInterface.OnClickListener() {
@@ -108,7 +111,7 @@ public class SettingActivity extends AppCompatActivity {
                         break;
                     case 2:
 
-                        AlertDialog dialog1=new AlertDialog.Builder(SettingActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+                        AlertDialog dialog1=new AlertDialog.Builder(SettingActivity.this,R.style.AppDialog)
                                 .setTitle("设置默认模式")
                                 .setSingleChoiceItems(modes, (int) Preference.get(SettingActivity.this, "default", "int"), new DialogInterface.OnClickListener() {
                                     @Override
@@ -152,7 +155,7 @@ public class SettingActivity extends AppCompatActivity {
 
     }
     private void showBusyboxInfo(){
-        AlertDialog dialog=new AlertDialog.Builder(SettingActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+        AlertDialog dialog=new AlertDialog.Builder(SettingActivity.this,R.style.AppDialog)
                 .setMessage(busyBoxInfo)
                 .setTitle("Busybox版本信息")
                 .setNegativeButton("返回", new DialogInterface.OnClickListener() {
@@ -165,7 +168,7 @@ public class SettingActivity extends AppCompatActivity {
         dialog.show();
     }
     private void installBusybox(){
-        final AlertDialog dialog=new AlertDialog.Builder(SettingActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+        final AlertDialog dialog=new AlertDialog.Builder(SettingActivity.this,R.style.AppDialog)
                 .setTitle("检测到您的设备暂未安装BusyBox，这可能使模块运行不稳定")
                 .setCancelable(true)
                 .setItems(new String[]{"直接安装", "安装magisk模块"}, new DialogInterface.OnClickListener() {
@@ -243,7 +246,7 @@ public class SettingActivity extends AppCompatActivity {
 
     }
     private void installLKT(){
-        final AlertDialog dialog1=new AlertDialog.Builder(SettingActivity.this,android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
+        final AlertDialog dialog1=new AlertDialog.Builder(SettingActivity.this,R.style.AppDialog)
                 .setTitle("检测到您的设备暂未安装LKT模块")
                 .setMessage("是否下载LKT magisk模块到您的设备？")
                 .setCancelable(false)
@@ -308,6 +311,15 @@ public class SettingActivity extends AppCompatActivity {
         dialog1.show();
     }
 
+    private void initToolBar(){
+        Toolbar toolbar=findViewById(R.id.simple_toolbar);
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finish();
+            }
+        });
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
